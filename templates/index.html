@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GeoSPBU Semarang</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="brand">
+            <div class="brand-logo">G</div>
+            <div class="brand-text">
+                <span class="brand-name">GeoSPBU Semarang</span>
+                <span class="brand-tag">Analisis SPBU dan Mobilitas</span>
+            </div>
+        </div>
+        <nav class="nav-links">
+            <a href="/" title="Lihat peta utama">Peta</a>
+            <a href="/dashboard" title="Buka dashboard statistik">Dashboard</a>
+            <a href="/tentang" title="Pelajari metodologi aplikasi">Tentang</a>
+        </nav>
+    </header>
+
+    <main class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>GeoSPBU Semarang</h1>
+                <p>Temukan lokasi SPBU strategis dengan filter, analisis, dan rekomendasi berbasis peta.</p>
+            </div>
+
+            <div class="sidebar-card search-card">
+                <label for="search-input">Cari SPBU</label>
+                <div class="search-row">
+                    <input id="search-input" type="search" placeholder="Nama atau alamat SPBU" title="Cari SPBU berdasarkan nama atau alamat" />
+                    <button id="search-button" class="sidebar-button" title="Cari SPBU di peta">Cari</button>
+                </div>
+                <div class="filter-group">
+                    <label for="brand-filter">Brand</label>
+                    <select id="brand-filter" title="Filter SPBU berdasarkan brand">
+                        <option value="Semua">Semua</option>
+                        <option value="Pertamina">Pertamina</option>
+                        <option value="Shell">Shell</option>
+                        <option value="Vivo">Vivo</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="kecamatan-filter">Kecamatan</label>
+                    <select id="kecamatan-filter" title="Filter SPBU berdasarkan kecamatan">
+                        <option value="Semua">Semua</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button id="reset-filters" class="sidebar-button secondary" title="Reset semua filter dan pencarian">Reset Filter</button>
+                    <button id="export-button" class="sidebar-button secondary" title="Cetak atau export rekomendasi ke PDF">Cetak / Export</button>
+                </div>
+            </div>
+
+            <div class="sidebar-card stats-card">
+                <h2>Ringkasan</h2>
+                <div class="stat-item">
+                    <span class="stat-value" id="spbu-count">0</span>
+                    <span class="stat-label">Jumlah SPBU</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="zona-count">0</span>
+                    <span class="stat-label">Zona Lalu Lintas</span>
+                </div>
+            </div>
+
+            <div class="sidebar-card info-card">
+                <h2>Kontrol Cepat</h2>
+                <p>Gunakan filter untuk membatasi SPBU dan search untuk men-zoom lokasi yang Anda cari.</p>
+                <button id="toggle-access" class="sidebar-button" title="Tampilkan atau sembunyikan analisis aksesibilitas">Tampilkan Analisis Aksesibilitas</button>
+                <a href="/dashboard" class="sidebar-link" title="Lihat dashboard statistik">Lihat Dashboard Statistik</a>
+            </div>
+        </aside>
+
+        <section class="map-section">
+            <div class="map-toolbar">
+                <span id="map-status">Memuat data peta...</span>
+            </div>
+            <div id="loading-overlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <span>Memuat data...</span>
+            </div>
+            <div id="map"></div>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <span>GeoSPBU Semarang &ndash; Dibuat oleh Tim Pemrograman Komputer Kelompok D</span>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <script src="/static/js/main.js"></script>
+</body>
+</html>

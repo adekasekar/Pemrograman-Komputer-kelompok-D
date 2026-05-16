@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tentang GeoSPBU Semarang</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="brand">
+            <div class="brand-logo">G</div>
+            <div class="brand-text">
+                <span class="brand-name">GeoSPBU Semarang</span>
+                <span class="brand-tag">Tentang & Metodologi</span>
+            </div>
+        </div>
+        <nav class="nav-links">
+            <a href="/">Peta</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/tentang" class="active">Tentang</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1>Tentang GeoSPBU Semarang</h1>
+                <p>Penjelasan metodologi dan arsitektur aplikasi penentuan lokasi SPBU strategis.</p>
+            </div>
+        </div>
+
+        <section class="chart-card">
+            <h2>Tujuan Aplikasi</h2>
+            <p>Aplikasi ini dirancang untuk membantu pemangku kepentingan dalam menentukan lokasi SPBU strategis di Kota Semarang berdasarkan analisis spasial, aksesibilitas, dan tingkat kepadatan lalu lintas.</p>
+        </section>
+
+        <section class="chart-card">
+            <h2>Data dan Sumber</h2>
+            <ul>
+                <li>Data SPBU meliputi nama, alamat, merek, dan lokasi geografis (latitude/longitude).</li>
+                <li>Data zona lalu lintas berisi nama zona, kecamatan, tingkat kepadatan, radius pengaruh, dan koordinat zona.</li>
+                <li>Semua data saat ini disimpan dalam database SQLite lokal.</li>
+            </ul>
+        </section>
+
+        <section class="chart-card">
+            <h2>Metodologi Analisis</h2>
+            <ul>
+                <li><strong>Peta Interaktif:</strong> Menampilkan SPBU dan zona lalu lintas di peta Leaflet dengan marker dan heatmap.</li>
+                <li><strong>Aksesibilitas:</strong> Menghitung blind spot dengan grid spasial dan radius cakupan 2 km dari SPBU terdekat.</li>
+                <li><strong>Rekomendasi Lokasi:</strong> Menilai kandidat lokasi berdasarkan jarak ke zona padat, jarak ke SPBU eksisting, dan jarak ke jalan utama.</li>
+                <li><strong>Statistik:</strong> Menyajikan ringkasan jumlah SPBU, distribusi brand, kecamatan dengan SPBU terbanyak, dan area blind spot teridentifikasi.</li>
+            </ul>
+        </section>
+
+        <section class="chart-card">
+            <h2>Teknologi</h2>
+            <ul>
+                <li>Backend: Flask, SQLite, SQLAlchemy.</li>
+                <li>Frontend: Leaflet.js, Chart.js, HTML/CSS/JavaScript.</li>
+                <li>Analisis spasial: Perhitungan jarak Haversine untuk mendukung evaluasi radius dan rekomendasi.</li>
+            </ul>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <span>GeoSPBU Semarang &ndash; Dibuat oleh Tim Pemrograman Komputer Kelompok D</span>
+    </footer>
+</body>
+</html>

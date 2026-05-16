@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Statistik SPBU Semarang</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <header class="top-navbar">
+        <div class="brand">
+            <div class="brand-logo">G</div>
+            <div class="brand-text">
+                <span class="brand-name">GeoSPBU Semarang</span>
+                <span class="brand-tag">Dashboard Statistik</span>
+            </div>
+        </div>
+        <nav class="nav-links">
+            <a href="/" title="Kembali ke peta">Peta</a>
+            <a href="/dashboard" title="Halaman dashboard" class="active">Dashboard</a>
+            <a href="/tentang" title="Pelajari metodologi">Tentang</a>
+        </nav>
+    </header>
+
+    <main class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1>Dashboard Statistik</h1>
+                <p>Ringkasan performa SPBU dan kondisi lalu lintas di Kota Semarang.</p>
+            </div>
+            <a href="/" class="dashboard-action">Kembali ke Peta</a>
+        </div>
+
+        <section class="summary-grid">
+            <div class="summary-card">
+                <h3>Total SPBU</h3>
+                <p id="total-spbu">0</p>
+            </div>
+            <div class="summary-card">
+                <h3>Pertamina</h3>
+                <p id="count-pertamina">0</p>
+            </div>
+            <div class="summary-card">
+                <h3>Shell</h3>
+                <p id="count-shell">0</p>
+            </div>
+            <div class="summary-card">
+                <h3>Vivo</h3>
+                <p id="count-vivo">0</p>
+            </div>
+            <div class="summary-card">
+                <h3>Kecamatan Terbanyak</h3>
+                <p id="top-kecamatan">-</p>
+            </div>
+            <div class="summary-card">
+                <h3>Area Blind Spot</h3>
+                <p id="blindspot-area">0 km²</p>
+            </div>
+        </section>
+
+        <section class="charts-grid">
+            <div class="chart-card">
+                <h2>Jumlah SPBU per Kecamatan</h2>
+                <div class="chart-container">
+                    <canvas id="spbuKecamatanChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h2>Distribusi Brand SPBU</h2>
+                <div class="chart-container">
+                    <canvas id="brandChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-card">
+                <h2>Tingkat Kepadatan per Zona</h2>
+                <div class="chart-container">
+                    <canvas id="zonaChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="table-card">
+            <h2>Ranking Kecamatan</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kecamatan</th>
+                            <th>Jumlah SPBU</th>
+                            <th>Luas (km²)</th>
+                            <th>Rasio</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kecamatan-table-body"></tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <span>GeoSPBU Semarang &ndash; Dibuat oleh Tim Pemrograman Komputer Kelompok D</span>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
