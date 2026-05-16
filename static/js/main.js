@@ -55,9 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const brandIcons = {
         Pertamina: createBrandIcon('red'),
-        Shell: createBrandIcon('yellow'),
-        Vivo: createBrandIcon('blue'),
-        default: createBrandIcon('blue')
+        default: createBrandIcon('red')
     };
 
     const createRecommendationIcon = (rank) => {

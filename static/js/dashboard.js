@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
     const totalSpbuEl = document.getElementById('total-spbu');
     const countPertaminaEl = document.getElementById('count-pertamina');
-    const countShellEl = document.getElementById('count-shell');
-    const countVivoEl = document.getElementById('count-vivo');
     const topKecamatanEl = document.getElementById('top-kecamatan');
     const blindspotAreaEl = document.getElementById('blindspot-area');
     const kecamatanTableBody = document.getElementById('kecamatan-table-body');
@@ -12,8 +10,6 @@ document.addEventListener('DOMContentLoaded', function () {
         .then((data) => {
             totalSpbuEl.textContent = data.total_spbu || 0;
             countPertaminaEl.textContent = data.brand_counts.Pertamina || 0;
-            countShellEl.textContent = data.brand_counts.Shell || 0;
-            countVivoEl.textContent = data.brand_counts.Vivo || 0;
             topKecamatanEl.textContent = data.kecamatan_with_most_spbu || '-';
             blindspotAreaEl.textContent = `${data.blind_spot_area.toFixed(1)} km²`;
 
@@ -41,17 +37,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            new Chart(document.getElementById('brandChart'), {
+            new Chart(document.getElementById('kecamatanPieChart'), {
                 type: 'pie',
                 data: {
-                    labels: ['Pertamina', 'Shell', 'Vivo'],
+                    labels: kecamatanLabels,
                     datasets: [{
-                        data: [
-                            data.brand_counts.Pertamina || 0,
-                            data.brand_counts.Shell || 0,
-                            data.brand_counts.Vivo || 0
-                        ],
-                        backgroundColor: ['#dc2626', '#f59e0b', '#0369a1']
+                        data: kecamatanValues,
+                        backgroundColor: ['#dc2626', '#f97316', '#fb923c', '#f59e0b', '#34d399', '#60a5fa', '#818cf8', '#a855f7', '#ec4899', '#22c55e']
                     }]
                 },
                 options: {
