@@ -9,12 +9,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const zonaLayer = L.layerGroup();
     const rekomLayer = L.layerGroup();
     const accessLayer = L.layerGroup();
-    const heatLayer = L.heatLayer([], {
-        radius: 40,
-        blur: 30,
-        maxZoom: 15,
-        gradient: {0.2: 'green', 0.5: 'yellow', 0.8: 'orange', 1.0: 'red'}
-    });
 
     const spbuCount = document.getElementById('spbu-count');
     const zonaCount = document.getElementById('zona-count');
@@ -27,11 +21,13 @@ document.addEventListener('DOMContentLoaded', function () {
     const kecamatanFilter = document.getElementById('kecamatan-filter');
     const resetFilters = document.getElementById('reset-filters');
     const exportButton = document.getElementById('export-button');
+    const recommendationList = document.getElementById('recommendation-list');
 
     let accessVisible = false;
     let spbuData = [];
     let zoneData = [];
     let spbuMarkers = [];
+    let recommendationMarkers = [];
 
     const showLoading = () => {
         loadingOverlay.classList.remove('hidden');
@@ -58,14 +54,39 @@ document.addEventListener('DOMContentLoaded', function () {
         default: createBrandIcon('red')
     };
 
+    const getRecommendationRankClass = (rank) => {
+        if (rank <= 3) return 'gold';
+        if (rank <= 6) return 'silver';
+        return 'green';
+    };
+
     const createRecommendationIcon = (rank) => {
+        const rankClass = getRecommendationRankClass(rank);
         return L.divIcon({
-            className: 'recommendation-marker',
+            className: `recommendation-marker ${rankClass}`,
             html: `<div>${rank}</div>`,
-            iconSize: [38, 38],
-            iconAnchor: [19, 19],
-            popupAnchor: [0, -20]
+            iconSize: [42, 42],
+            iconAnchor: [21, 21],
+            popupAnchor: [0, -22]
         });
+    };
+
+    const createRecommendationPopup = (item) => {
+        return `
+            <div style="max-width: 240px; line-height: 1.35;">
+                <strong>#${item.rank} Rekomendasi Terbaik</strong><br />
+                <em>${item.location_name}</em><br /><br />
+                <strong>Skor Total:</strong> ${item.total_score}/100<br />
+                <strong>Skor Aksesibilitas:</strong> ${item.access_score}/100<br />
+                <span style="font-size: 12px; color: #475569;">${item.access_explanation}</span><br />
+                <strong>Skor Kepadatan:</strong> ${item.density_score}/100<br />
+                <span style="font-size: 12px; color: #475569;">${item.density_explanation}</span><br />
+                <strong>Skor Jalan Utama:</strong> ${item.road_score}/100<br />
+                <strong>Jarak ke SPBU terdekat:</strong> ${item.nearest_spbu_distance_m.toLocaleString()} m (${item.nearest_spbu_distance_km} km)<br />
+                <strong>SPBU Terdekat:</strong> ${item.nearest_spbu_name}<br />
+                <strong>Alasan:</strong> ${item.reasons}
+            </div>
+        `;
     };
 
     const createSPBUPopup = (item) => {
@@ -90,9 +111,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return nearest ? nearest.kecamatan : 'Lainnya';
     };
 
-    const setBrandOptions = () => {
-        const uniqueKecamatans = new Set(zoneData.map((zone) => zone.kecamatan));
-        const options = ['Semua', ...Array.from(uniqueKecamatans).sort()];
+    const setKecamatanOptions = () => {
+        const uniqueKecamatans = new Set(spbuData
+            .map((item) => item.kecamatan)
+            .filter((kec) => kec && kec !== 'Lainnya')
+        );
+        const options = ['Semua', ...Array.from(uniqueKecamatans).sort((a, b) => a.localeCompare(b, 'id'))];
         kecamatanFilter.innerHTML = options.map((kec) => `<option value="${kec}">${kec}</option>`).join('');
     };
 
@@ -214,27 +238,58 @@ document.addEventListener('DOMContentLoaded', function () {
         refreshSPBU();
     };
 
+    const zoomToRecommendation = (rank) => {
+        const entry = recommendationMarkers.find((entry) => entry.rank === rank);
+        if (!entry) return;
+        map.setView([entry.item.latitude, entry.item.longitude], 15);
+        entry.marker.openPopup();
+    };
+
+    const renderRecommendationCards = (recommendations) => {
+        if (!recommendationList) return;
+        if (!recommendations.length) {
+            recommendationList.innerHTML = '<p class="muted-text">Tidak ada rekomendasi yang tersedia.</p>';
+            return;
+        }
+
+        recommendationList.innerHTML = recommendations.map((item) => {
+            const styleClass = item.rank <= 3 ? 'gold' : item.rank <= 6 ? 'silver' : 'green';
+            return `
+                <button class="recommendation-card ${styleClass}" data-rank="${item.rank}" type="button">
+                    <div class="recommendation-rank">#${item.rank} Rekomendasi</div>
+                    <div class="recommendation-location">${item.location_name}</div>
+                    <div class="recommendation-score">Skor Total: ${item.total_score}/100</div>
+                </button>
+            `;
+        }).join('');
+
+        recommendationList.querySelectorAll('.recommendation-card').forEach((card) => {
+            card.addEventListener('click', () => {
+                const rank = Number(card.dataset.rank);
+                zoomToRecommendation(rank);
+            });
+        });
+    };
+
     const loadRecommendations = () => {
-        fetch('/api/rekomendasi')
+        return fetch('/api/rekomendasi')
             .then((response) => response.json())
             .then((data) => {
                 const recommendations = data.recommendations || [];
-                recommendations.forEach((item) => {
+                recommendationMarkers = recommendations.map((item) => {
                     const marker = L.marker([item.latitude, item.longitude], {
                         icon: createRecommendationIcon(item.rank)
-                    }).bindPopup(`
-                        <strong>Rekomendasi #${item.rank}</strong><br />
-                        <strong>Skor Total:</strong> ${item.total_score}<br />
-                        <strong>Kepadatan:</strong> ${item.density_score}<br />
-                        <strong>Aksesibilitas:</strong> ${item.access_score}<br />
-                        <strong>Jalan Utama:</strong> ${item.road_score}<br />
-                        <strong>Alasan:</strong> ${item.reasons.join(', ')}
-                    `);
+                    }).bindPopup(createRecommendationPopup(item));
                     rekomLayer.addLayer(marker);
+                    return { rank: item.rank, item, marker };
                 });
+                renderRecommendationCards(recommendations);
             })
             .catch((error) => {
                 console.error('Gagal memuat rekomendasi lokasi:', error);
+                if (recommendationList) {
+                    recommendationList.innerHTML = '<p class="muted-text">Gagal memuat rekomendasi.</p>';
+                }
             });
     };
 
@@ -243,7 +298,6 @@ document.addEventListener('DOMContentLoaded', function () {
             .then((response) => response.json())
             .then((data) => {
                 zoneData = data;
-                setBrandOptions();
                 zoneData.forEach((item) => {
                     const color = item.tingkat_kepadatan >= 4 ? '#dc2626' : item.tingkat_kepadatan === 3 ? '#f59e0b' : '#0284c7';
                     const circle = L.circle([item.latitude, item.longitude], {
@@ -258,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function () {
                         Kepadatan: ${item.tingkat_kepadatan}
                     `);
                     zonaLayer.addLayer(circle);
-                    heatLayer.addLatLng([item.latitude, item.longitude, item.tingkat_kepadatan / 5]);
                 });
                 zonaCount.textContent = zoneData.length;
             });
@@ -275,8 +328,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const prepareSPBUData = () => {
         spbuData = spbuData.map((item) => ({
             ...item,
-            kecamatan: getNearestKecamatan(item.latitude, item.longitude)
+            kecamatan: item.kecamatan || getNearestKecamatan(item.latitude, item.longitude)
         }));
+        setKecamatanOptions();
         initializeMarkers();
         setSummaryCounts();
     };
@@ -316,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const overlays = {
         'SPBU Eksisting': spbuLayer,
         'Kepadatan Lalu Lintas': zonaLayer,
-        'Heatmap Kepadatan': heatLayer,
         'Rekomendasi Lokasi': rekomLayer
     };
     L.control.layers(null, overlays, { collapsed: false }).addTo(map);

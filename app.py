@@ -106,13 +106,18 @@ def api_analisis_aksesibilitas():
 @app.route('/api/rekomendasi')
 def api_rekomendasi():
     conn = get_db_connection()
-    spbu_rows = conn.execute('SELECT latitude, longitude FROM spbu').fetchall()
-    zona_rows = conn.execute('SELECT latitude, longitude, tingkat_kepadatan, radius_meter FROM zona_lalu_lintas').fetchall()
+    spbu_rows = conn.execute('SELECT nama, latitude, longitude FROM spbu').fetchall()
+    zona_rows = conn.execute('SELECT nama_zona, kecamatan, latitude, longitude, tingkat_kepadatan, radius_meter FROM zona_lalu_lintas').fetchall()
     conn.close()
 
-    spbu_points = [(row['latitude'], row['longitude']) for row in spbu_rows]
+    spbu_points = [
+        {'name': row['nama'], 'latitude': row['latitude'], 'longitude': row['longitude']}
+        for row in spbu_rows
+    ]
     zone_points = [
         {
+            'name': row['nama_zona'],
+            'kecamatan': row['kecamatan'],
             'latitude': row['latitude'],
             'longitude': row['longitude'],
             'density': row['tingkat_kepadatan'],
@@ -133,14 +138,23 @@ def api_rekomendasi():
         {'name': 'Jl. Jend. Sudirman', 'latitude': -6.9930, 'longitude': 110.4250}
     ]
 
-    min_lat, max_lat = -7.08, -6.90
-    min_lng, max_lng = 110.30, 110.50
-    step = 0.0045
+    min_lat, max_lat = -7.15, -6.99
+    min_lng, max_lng = 110.30, 110.49
+    step = 0.003
+    jitter_offset = 0.0012
 
     candidates = []
+    lat_steps = int((max_lat - min_lat) / step) + 1
+    lng_steps = int((max_lng - min_lng) / step) + 1
 
-    for lat in [min_lat + i * step for i in range(int((max_lat - min_lat) / step) + 1)]:
-        for lng in [min_lng + j * step for j in range(int((max_lng - min_lng) / step) + 1)]:
+    for i in range(lat_steps):
+        base_lat = min_lat + i * step
+        for j in range(lng_steps):
+            base_lng = min_lng + j * step
+            lat = base_lat + (j % 2 == 0 and jitter_offset or -jitter_offset)
+            lng = base_lng + (i % 2 == 0 and jitter_offset or -jitter_offset)
+            if lat < min_lat or lat > max_lat or lng < min_lng or lng > max_lng:
+                continue
             candidates.append({'latitude': lat, 'longitude': lng})
 
     raw_scores = []
@@ -158,11 +172,18 @@ def api_rekomendasi():
             influence = max(0, (zone['radius'] - dist) / zone['radius'])
             density_score += zone['density'] * influence
 
-        nearest_spbu = min(haversine_distance(lat, lng, spbu_lat, spbu_lng) for spbu_lat, spbu_lng in spbu_points)
-        access_score = min(nearest_spbu / 5000.0, 1.0) * 100
+        nearest_spbu = min(spbu_points, key=lambda spbu: haversine_distance(lat, lng, spbu['latitude'], spbu['longitude']))
+        nearest_spbu_distance = haversine_distance(lat, lng, nearest_spbu['latitude'], nearest_spbu['longitude'])
 
-        nearest_road = min(haversine_distance(lat, lng, road['latitude'], road['longitude']) for road in main_roads)
-        road_score = max(0.0, (3000.0 - nearest_road) / 3000.0) * 100
+        if nearest_spbu_distance < 1000:
+            continue
+
+        nearest_zone = min(zone_points, key=lambda zone: haversine_distance(lat, lng, zone['latitude'], zone['longitude']))
+        nearest_road = min(main_roads, key=lambda road: haversine_distance(lat, lng, road['latitude'], road['longitude']))
+        nearest_road_distance = haversine_distance(lat, lng, nearest_road['latitude'], nearest_road['longitude'])
+
+        access_score = min(nearest_spbu_distance / 5000.0, 1.0) * 100
+        road_score = max(0.0, (3000.0 - nearest_road_distance) / 3000.0) * 100
 
         raw_scores.append({
             'candidate': candidate,
@@ -170,7 +191,10 @@ def api_rekomendasi():
             'access': access_score,
             'road': road_score,
             'nearest_spbu': nearest_spbu,
-            'nearest_road': nearest_road
+            'nearest_spbu_distance': nearest_spbu_distance,
+            'nearest_zone': nearest_zone,
+            'nearest_road': nearest_road,
+            'nearest_road_distance': nearest_road_distance
         })
 
         max_density = max(max_density, density_score)
@@ -192,23 +216,55 @@ def api_rekomendasi():
 
         reasons = []
         if normalized_density >= 65:
-            reasons.append('Dekat zona kepadatan tinggi')
+            reasons.append('Terdekat dengan zona kepadatan tinggi')
         if normalized_access >= 65:
-            reasons.append('Terdekat dari SPBU eksisting relatif jauh')
+            reasons.append('Jarak ke SPBU terdekat relatif jauh')
         if normalized_road >= 65:
-            reasons.append('Dekat jalan utama')
+            reasons.append('Mudah diakses dari jalan utama')
         if not reasons:
-            reasons.append('Kombinasi keseimbangan kepadatan, akses, dan jalan utama')
+            reasons.append('Kombinasi keseimbangan antara kepadatan, aksesibilitas, dan jalan utama')
 
         item.update({
             'normalized_density': round(normalized_density, 1),
             'normalized_access': round(normalized_access, 1),
             'normalized_road': round(normalized_road, 1),
             'total_score': round(total_score, 1),
-            'reasons': reasons
+            'reasons': ' '.join(reasons)
         })
 
-    recommendations = sorted(raw_scores, key=lambda x: x['total_score'], reverse=True)[:5]
+    sorted_candidates = sorted(raw_scores, key=lambda x: x['total_score'], reverse=True)
+    recommendations = []
+    selected_indices = set()
+    selected_kecamatans = set()
+
+    def is_too_close(lat, lng):
+        return any(
+            haversine_distance(lat, lng, selected['candidate']['latitude'], selected['candidate']['longitude']) < 1500
+            for selected in recommendations
+        )
+
+    for index, item in enumerate(sorted_candidates):
+        if len(recommendations) >= 10:
+            break
+        kecamatan = item['nearest_zone']['kecamatan'] or 'Lainnya'
+        if kecamatan in selected_kecamatans:
+            continue
+        if is_too_close(item['candidate']['latitude'], item['candidate']['longitude']):
+            continue
+        recommendations.append(item)
+        selected_indices.add(index)
+        selected_kecamatans.add(kecamatan)
+
+    for index, item in enumerate(sorted_candidates):
+        if len(recommendations) >= 10:
+            break
+        if index in selected_indices:
+            continue
+        if is_too_close(item['candidate']['latitude'], item['candidate']['longitude']):
+            continue
+        recommendations.append(item)
+        selected_indices.add(index)
+
     response = []
 
     for rank, item in enumerate(recommendations, start=1):
@@ -216,10 +272,19 @@ def api_rekomendasi():
             'rank': rank,
             'latitude': item['candidate']['latitude'],
             'longitude': item['candidate']['longitude'],
-            'total_score': item['total_score'],
+            'location_name': f"{item['nearest_zone']['name']}, {item['nearest_zone']['kecamatan']}",
+            'nearest_area': item['nearest_zone']['kecamatan'],
+            'nearest_zone_name': item['nearest_zone']['name'],
+            'nearest_spbu_name': item['nearest_spbu']['name'],
+            'nearest_spbu_distance_m': round(item['nearest_spbu_distance'], 1),
+            'nearest_spbu_distance_km': round(item['nearest_spbu_distance'] / 1000.0, 2),
+            'total_score': round(item['total_score'], 1),
             'density_score': item['normalized_density'],
             'access_score': item['normalized_access'],
             'road_score': item['normalized_road'],
+            'access_explanation': f"Jauh dari SPBU terdekat: {round(item['nearest_spbu_distance'] / 1000.0, 2)} km",
+            'density_explanation': f"Dekat zona padat: {item['nearest_zone']['name']}",
+            'road_explanation': f"Dekat jalan utama: {item['nearest_road']['name']}",
             'reasons': item['reasons']
         })
 
@@ -239,7 +304,7 @@ def tentang():
 @app.route('/api/statistik')
 def api_statistik():
     conn = get_db_connection()
-    spbu_rows = conn.execute('SELECT brand, latitude, longitude FROM spbu').fetchall()
+    spbu_rows = conn.execute('SELECT brand, kecamatan, latitude, longitude FROM spbu').fetchall()
     zona_rows = conn.execute('SELECT nama_zona, kecamatan, tingkat_kepadatan, latitude, longitude FROM zona_lalu_lintas').fetchall()
     conn.close()
 
@@ -263,13 +328,15 @@ def api_statistik():
         for row in zona_rows
     ]
 
-    kecamatan_counts = {}
+    semarang_kecamatan = [
+        'Semarang Utara', 'Semarang Tengah', 'Semarang Timur', 'Semarang Barat', 'Semarang Selatan',
+        'Pedurungan', 'Gayamsari', 'Genuk', 'Tembalang', 'Banyumanik', 'Candisari', 'Gajahmungkur',
+        'Ngaliyan', 'Tugu', 'Mijen', 'Gunungpati'
+    ]
+
+    kecamatan_counts = {kecamatan: 0 for kecamatan in semarang_kecamatan}
     for spbu in spbu_rows:
-        nearest_zone = min(
-            zone_items,
-            key=lambda zone: haversine_distance(spbu['latitude'], spbu['longitude'], zone['latitude'], zone['longitude'])
-        )
-        kecamatan = nearest_zone['kecamatan']
+        kecamatan = spbu['kecamatan']
         kecamatan_counts[kecamatan] = kecamatan_counts.get(kecamatan, 0) + 1
 
     kecamatan_list = [
@@ -278,7 +345,7 @@ def api_statistik():
     ]
     kecamatan_list.sort(key=lambda x: x['count'], reverse=True)
 
-    top_kecamatan = kecamatan_list[0]['kecamatan'] if kecamatan_list else '-'
+    top_kecamatan = kecamatan_list[0]['kecamatan'] if kecamatan_list and kecamatan_list[0]['count'] > 0 else '-'
 
     area_by_kecamatan = {
         'Semarang Tengah': 8.5,
@@ -286,7 +353,17 @@ def api_statistik():
         'Semarang Selatan': 47.5,
         'Semarang Utara': 33.0,
         'Pedurungan': 45.0,
-        'Tanjung Mas': 11.2
+        'Tanjung Mas': 11.2,
+        'Gayamsari': 18.5,
+        'Genuk': 27.2,
+        'Tembalang': 34.5,
+        'Banyumanik': 26.1,
+        'Candisari': 34.0,
+        'Gajahmungkur': 27.8,
+        'Ngaliyan': 36.6,
+        'Tugu': 53.5,
+        'Mijen': 50.0,
+        'Gunungpati': 35.2
     }
 
     kecamatan_table = []
@@ -295,12 +372,14 @@ def api_statistik():
         count = item['count']
         area = area_by_kecamatan.get(kec, 20.0)
         ratio = count / area if area > 0 else 0
-        if ratio >= 0.35:
+        if count == 0:
             status = 'Kritis'
-        elif ratio >= 0.18:
+        elif count <= 2:
             status = 'Kurang'
-        else:
+        elif count <= 4:
             status = 'Cukup'
+        else:
+            status = 'Baik'
         kecamatan_table.append({
             'kecamatan': kec,
             'count': count,

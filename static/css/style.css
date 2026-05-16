@@ -258,23 +258,51 @@ body {
     background: #16a34a;
 }
 
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.status-chip.baik {
+    background: #16a34a;
+}
+
+.status-chip.cukup {
+    background: #f59e0b;
+}
+
+.status-chip.kurang {
+    background: #f97316;
+}
+
+.status-chip.kritis {
+    background: #dc2626;
+}
+
 .legend-swatch.pulse {
     background: linear-gradient(135deg, rgba(248, 113, 20, 0.9), rgba(59, 130, 246, 0.9));
 }
 
 .recommendation-marker {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: #16a34a;
     border: 3px solid #ffffff;
-    box-shadow: 0 6px 18px rgba(22, 163, 74, 0.25);
+    box-shadow: 0 6px 20px rgba(22, 163, 74, 0.25);
     color: #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 15px;
     position: relative;
 }
 
@@ -284,6 +312,84 @@ body {
     top: 4px;
     right: 6px;
     font-size: 12px;
+}
+
+.recommendation-marker.gold {
+    background: #f59e0b;
+    box-shadow: 0 6px 22px rgba(245, 158, 11, 0.32);
+}
+
+.recommendation-marker.silver {
+    background: #9ca3af;
+    box-shadow: 0 6px 22px rgba(148, 163, 184, 0.32);
+}
+
+.recommendation-marker.green {
+    background: #16a34a;
+    box-shadow: 0 6px 22px rgba(22, 163, 74, 0.32);
+}
+
+.recommendation-list {
+    display: grid;
+    gap: 12px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.recommendation-card {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 16px;
+    border-radius: 18px;
+    border: 1px solid #dbe5f2;
+    background: #ffffff;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    color: inherit;
+    font: inherit;
+}
+
+.recommendation-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.12);
+    border-color: #cbd5e1;
+}
+
+.recommendation-card .recommendation-rank {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.recommendation-card .recommendation-location {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.recommendation-card .recommendation-score {
+    color: #475569;
+    font-size: 14px;
+}
+
+.muted-text {
+    color: #64748b;
+    font-size: 14px;
+    margin: 0;
+}
+
+.recommendation-card.gold {
+    border-color: #f59e0b;
+}
+
+.recommendation-card.silver {
+    border-color: #9ca3af;
+}
+
+.recommendation-card.green {
+    border-color: #16a34a;
 }
 
 .stats-card .stat-item {
