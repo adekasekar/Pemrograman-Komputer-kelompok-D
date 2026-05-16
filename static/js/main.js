@@ -20,8 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const brandFilter = document.getElementById('brand-filter');
     const kecamatanFilter = document.getElementById('kecamatan-filter');
     const resetFilters = document.getElementById('reset-filters');
-    const exportButton = document.getElementById('export-button');
-    const recommendationList = document.getElementById('recommendation-list');
+    const filterToggleButton = document.getElementById('toggle-filter-btn');
+    const filterDropdown = document.getElementById('filter-dropdown');
 
     let accessVisible = false;
     let spbuData = [];
@@ -245,37 +245,12 @@ document.addEventListener('DOMContentLoaded', function () {
         entry.marker.openPopup();
     };
 
-    const renderRecommendationCards = (recommendations) => {
-        if (!recommendationList) return;
-        if (!recommendations.length) {
-            recommendationList.innerHTML = '<p class="muted-text">Tidak ada rekomendasi yang tersedia.</p>';
-            return;
-        }
-
-        recommendationList.innerHTML = recommendations.map((item) => {
-            const styleClass = item.rank <= 3 ? 'gold' : item.rank <= 6 ? 'silver' : 'green';
-            return `
-                <button class="recommendation-card ${styleClass}" data-rank="${item.rank}" type="button">
-                    <div class="recommendation-rank">#${item.rank} Rekomendasi</div>
-                    <div class="recommendation-location">${item.location_name}</div>
-                    <div class="recommendation-score">Skor Total: ${item.total_score}/100</div>
-                </button>
-            `;
-        }).join('');
-
-        recommendationList.querySelectorAll('.recommendation-card').forEach((card) => {
-            card.addEventListener('click', () => {
-                const rank = Number(card.dataset.rank);
-                zoomToRecommendation(rank);
-            });
-        });
-    };
-
     const loadRecommendations = () => {
         return fetch('/api/rekomendasi')
             .then((response) => response.json())
             .then((data) => {
                 const recommendations = data.recommendations || [];
+                rekomLayer.clearLayers();
                 recommendationMarkers = recommendations.map((item) => {
                     const marker = L.marker([item.latitude, item.longitude], {
                         icon: createRecommendationIcon(item.rank)
@@ -283,13 +258,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     rekomLayer.addLayer(marker);
                     return { rank: item.rank, item, marker };
                 });
-                renderRecommendationCards(recommendations);
             })
             .catch((error) => {
                 console.error('Gagal memuat rekomendasi lokasi:', error);
-                if (recommendationList) {
-                    recommendationList.innerHTML = '<p class="muted-text">Gagal memuat rekomendasi.</p>';
-                }
             });
     };
 
@@ -358,13 +329,30 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    brandFilter.addEventListener('change', refreshSPBU);
-    kecamatanFilter.addEventListener('change', refreshSPBU);
-    resetFilters.addEventListener('click', () => {
+    brandFilter?.addEventListener('change', refreshSPBU);
+    kecamatanFilter?.addEventListener('change', refreshSPBU);
+    resetFilters?.addEventListener('click', () => {
         resetSearchAndFilters();
     });
-    exportButton.addEventListener('click', () => {
-        window.print();
+
+    filterToggleButton?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        if (!filterDropdown) return;
+        const isOpen = !filterDropdown.classList.contains('hidden');
+        filterDropdown.classList.toggle('hidden', isOpen);
+        filterDropdown.classList.toggle('active', !isOpen);
+        filterDropdown.setAttribute('aria-expanded', String(!isOpen));
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!filterDropdown || !filterToggleButton) return;
+        if (filterDropdown.classList.contains('hidden')) return;
+        const target = event.target;
+        if (!filterDropdown.contains(target) && !filterToggleButton.contains(target)) {
+            filterDropdown.classList.add('hidden');
+            filterDropdown.classList.remove('active');
+            filterDropdown.setAttribute('aria-expanded', 'false');
+        }
     });
 
     const overlays = {
@@ -375,13 +363,68 @@ document.addEventListener('DOMContentLoaded', function () {
     L.control.layers(null, overlays, { collapsed: false }).addTo(map);
 
     showLoading();
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const applyUrlParams = () => {
+        const layer = urlParams.get('layer');
+        const focus = urlParams.get('focus');
+
+        if (layer) {
+            if (layer === 'spbu') {
+                if (!map.hasLayer(spbuLayer)) map.addLayer(spbuLayer);
+            }
+            if (layer === 'kepadatan') {
+                if (!map.hasLayer(zonaLayer)) map.addLayer(zonaLayer);
+            }
+            if (layer === 'rekomendasi') {
+                if (!map.hasLayer(rekomLayer)) map.addLayer(rekomLayer);
+            }
+            if (layer === 'aksesibilitas') {
+                accessVisible = true;
+                if (!map.hasLayer(accessLayer)) map.addLayer(accessLayer);
+                setAccessButtonState();
+            }
+        }
+
+        // Fallback: if the page uses checkboxes/buttons with expected IDs,
+        // set them and dispatch events so URL-driven activation works.
+        const setCheckboxAndDispatch = (id) => {
+            const el = document.getElementById(id);
+            if (el && el.type === 'checkbox') {
+                el.checked = true;
+                el.dispatchEvent(new Event('change'));
+            }
+        };
+
+        if (layer === 'spbu') {
+            setCheckboxAndDispatch('layer-spbu');
+        }
+        if (layer === 'kepadatan') {
+            setCheckboxAndDispatch('layer-kepadatan');
+        }
+        if (layer === 'rekomendasi') {
+            setCheckboxAndDispatch('layer-rekomendasi');
+        }
+        if (layer === 'aksesibilitas') {
+            const btn = document.getElementById('btn-aksesibilitas') || document.getElementById('toggle-access');
+            if (btn) btn.click();
+        }
+
+        if (focus === 'search' && searchInput) {
+            searchInput.focus();
+            if (searchInput.scrollIntoView) searchInput.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     Promise.all([loadZoneData(), loadSPBUData()])
         .then(() => {
             prepareSPBUData();
-            loadRecommendations();
-            return loadAccessAnalysis();
+            const recPromise = loadRecommendations();
+            const accessPromise = loadAccessAnalysis();
+            return Promise.all([recPromise, accessPromise]);
         })
         .then(() => {
+            applyUrlParams();
             hideLoading();
         })
         .catch((error) => {
