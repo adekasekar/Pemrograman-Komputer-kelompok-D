@@ -71,21 +71,34 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     };
 
-    const createRecommendationPopup = (item) => {
-        return '<div style="max-width: 240px; line-height: 1.35;">' +
-            '<strong>#' + item.rank + ' Rekomendasi Terbaik</strong><br />' +
-            '<em>' + item.location_name + '</em><br /><br />' +
-            '<strong>Skor Total:</strong> ' + item.total_score + '/100<br />' +
-            '<strong>Skor Aksesibilitas:</strong> ' + item.access_score + '/100<br />' +
-            '<span style="font-size: 12px; color: #475569;">' + item.access_explanation + '</span><br />' +
-            '<strong>Skor Kepadatan:</strong> ' + item.density_score + '/100<br />' +
-            '<span style="font-size: 12px; color: #475569;">' + item.density_explanation + '</span><br />' +
-            '<strong>Skor Jalan Utama:</strong> ' + item.road_score + '/100<br />' +
-            '<strong>Jarak ke SPBU terdekat:</strong> ' + item.nearest_spbu_distance_m + ' m (' + item.nearest_spbu_distance_km + ' km)<br />' +
-            '<strong>SPBU Terdekat:</strong> ' + item.nearest_spbu_name + '<br />' +
-            '<strong>Alasan:</strong> ' + item.reasons +
-            '</div>';
-    };
+const createRecommendationPopup = (item) => {
+    const rankClass = item.rank <= 3 ? 'gold' : item.rank <= 6 ? 'silver' : 'green';
+    const aksScore = Math.round(item.access_score);
+    const denScore = Math.round(item.density_score);
+    const roadScore = Math.round(item.road_score);
+    return '<div class="panel-rank-badge">' +
+        '<div class="panel-rank-number ' + rankClass + '">' + item.rank + '★</div>' +
+        '<div class="panel-rank-info"><strong>#' + item.rank + ' Rekomendasi Terbaik</strong>' +
+        '<span>' + item.location_name + '</span></div></div>' +
+        '<div class="panel-total"><span class="panel-total-label">Skor Total</span>' +
+        '<span class="panel-total-value">' + item.total_score + '/100</span></div>' +
+        '<div class="panel-scores">' +
+        '<div class="score-row"><span class="score-label">Aksesibilitas</span>' +
+        '<div class="score-bar-wrap"><div class="score-bar aksesibilitas" style="width:' + aksScore + '%"></div></div>' +
+        '<span class="score-value">' + aksScore + '</span></div>' +
+        '<div class="score-row"><span class="score-label">Kepadatan</span>' +
+        '<div class="score-bar-wrap"><div class="score-bar kepadatan" style="width:' + denScore + '%"></div></div>' +
+        '<span class="score-value">' + denScore + '</span></div>' +
+        '<div class="score-row"><span class="score-label">Jalan Utama</span>' +
+        '<div class="score-bar-wrap"><div class="score-bar jalan" style="width:' + roadScore + '%"></div></div>' +
+        '<span class="score-value">' + roadScore + '</span></div></div>' +
+        '<div class="panel-details">' +
+        '<div class="detail-row"><span class="detail-icon">📍</span><span class="detail-text"><strong>SPBU Terdekat:</strong> ' + item.nearest_spbu_name + '</span></div>' +
+        '<div class="detail-row"><span class="detail-icon">📏</span><span class="detail-text"><strong>Jarak:</strong> ' + item.nearest_spbu_distance_km + ' km</span></div>' +
+        '<div class="detail-row"><span class="detail-icon">🚦</span><span class="detail-text">' + item.density_explanation + '</span></div></div>' +
+        '<div class="panel-alasan"><div class="panel-alasan-title">💡 Alasan Rekomendasi</div>' +
+        '<div class="panel-alasan-text">' + item.reasons + '</div></div>';
+};
 
     const createSPBUPopup = (item) => {
         return '<strong>' + item.nama + '</strong><br />' +
@@ -244,8 +257,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 rekomLayer.clearLayers();
                 recommendationMarkers = recommendations.map(function(item) {
                     const marker = L.marker([item.latitude, item.longitude], {
-                        icon: createRecommendationIcon(item.rank)
-                    }).bindPopup(createRecommendationPopup(item));
+icon: createRecommendationIcon(item.rank)
+                    });
+                    marker.on('click', function() {
+                        const panel = document.getElementById('panel-rekomendasi');
+                        const content = document.getElementById('panel-content');
+                        if (panel && content) {
+                            content.innerHTML = createRecommendationPopup(item);
+                            panel.classList.remove('hidden');
+                        }
+                    });
                     rekomLayer.addLayer(marker);
                     return { rank: item.rank, item: item, marker: marker };
                 });
@@ -341,7 +362,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const overlays = {
         'SPBU Eksisting': spbuLayer,
         'Kepadatan Lalu Lintas': zonaLayer,
-        'Analisis Aksesibilitas': accessLayer
+        'Analisis Aksesibilitas': accessLayer,
         'Rekomendasi Lokasi': rekomLayer
     };
     L.control.layers(null, overlays, { collapsed: false }).addTo(map);
@@ -369,7 +390,12 @@ document.addEventListener('DOMContentLoaded', function () {
             searchInput.focus();
         }
     };
-
+const closePanel = document.getElementById('close-panel');
+if (closePanel) {
+    closePanel.addEventListener('click', function() {
+        document.getElementById('panel-rekomendasi').classList.add('hidden');
+    });
+}
     showLoading();
 
     Promise.all([loadZoneData(), loadSPBUData()])

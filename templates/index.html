@@ -16,51 +16,53 @@
                 <span class="brand-tag">Analisis SPBU dan Mobilitas</span>
             </div>
         </div>
+        <div class="nav-center">
+            <div class="nav-search">
+                <input id="search-input" type="search" placeholder="Cari SPBU..." />
+                <button id="search-button" class="nav-search-btn">Cari</button>
+            </div>
+            <div class="filter-panel">
+                <button id="toggle-filter-btn" class="filter-toggle-button" title="Filter SPBU">
+                    <span class="filter-icon">⚙</span>
+                </button>
+                <div id="filter-dropdown" class="filter-dropdown hidden" aria-expanded="false">
+                    <div class="filter-group">
+                        <label for="kecamatan-filter">Kecamatan</label>
+                        <select id="kecamatan-filter">
+                            <option value="Semua">Semua</option>
+                        </select>
+                    </div>
+                    <button id="reset-filters" class="filter-reset-button">Reset Filter</button>
+                </div>
+            </div>
+        </div>
         <nav class="nav-links">
             <a href="/">Beranda</a>
-            <a href="/peta" title="Lihat peta utama" class="active">Peta</a>
-            <a href="/dashboard" title="Buka dashboard statistik">Dashboard</a>
-            <a href="/tentang" title="Pelajari metodologi aplikasi">Tentang</a>
+            <a href="/peta" class="active">Peta</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/tentang">Tentang</a>
         </nav>
     </header>
 
     <main class="app-shell">
         <section class="map-section">
-            <div class="map-controls">
-                <div class="search-panel">
-                    <input id="search-input" type="search" placeholder="Nama atau alamat SPBU" title="Cari SPBU berdasarkan nama atau alamat" />
-                    <button id="search-button" class="search-button" title="Cari SPBU di peta">Cari</button>
-                </div>
-
-                <div class="filter-panel">
-                    <button id="toggle-filter-btn" class="filter-toggle-button" title="Tampilkan filter SPBU">
-                        <span class="filter-icon">⚙</span>
-                    </button>
-                    <div id="filter-dropdown" class="filter-dropdown hidden" aria-expanded="false">
-                        <div class="filter-group">
-                            <label for="kecamatan-filter">Kecamatan</label>
-                            <select id="kecamatan-filter" title="Filter SPBU berdasarkan kecamatan">
-                                <option value="Semua">Semua</option>
-                            </select>
-                        </div>
-                        <button id="reset-filters" class="filter-reset-button" title="Reset filter">Reset Filter</button>
-                    </div>
-                </div>
-            </div>
-
             <div class="map-status-floating">
                 <span id="map-status">Memuat data peta...</span>
             </div>
-
             <div id="loading-overlay" class="loading-overlay">
                 <div class="spinner"></div>
                 <span>Memuat data...</span>
             </div>
             <div id="map"></div>
-
-            <div class="action-buttons">
-            </div>
+            <div class="action-buttons"></div>
         </section>
+        <div id="panel-rekomendasi" class="panel-rekomendasi hidden">
+            <div class="panel-header">
+                <strong>Detail Rekomendasi</strong>
+                <button id="close-panel" class="close-panel">✕</button>
+            </div>
+            <div id="panel-content" class="panel-content"></div>
+        </div>
     </main>
 
     <footer class="page-footer">
