@@ -1357,3 +1357,61 @@ body {
         padding: 16px;
     }
 }
+
+body.peta-page {
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+body.peta-page .app-shell {
+    flex: 1;
+    overflow: hidden;
+    min-height: unset;
+}
+
+body.peta-page .map-section {
+    height: 100%;
+    overflow: hidden;
+}
+
+body.peta-page #map {
+    height: 100% !important;
+    min-height: unset !important;
+}
+
+body.peta-page .page-footer {
+    flex-shrink: 0;
+}
+body.peta-page {
+    overflow: hidden !important;
+    height: 100vh !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+body.peta-page .app-shell {
+    flex: 1 !important;
+    overflow: hidden !important;
+    min-height: unset !important;
+}
+
+body.peta-page .map-section {
+    height: 100% !important;
+    overflow: hidden !important;
+    min-height: unset !important;
+}
+
+body.peta-page #map {
+    height: 100% !important;
+    min-height: unset !important;
+}
+
+body.peta-page .top-navbar {
+    flex-shrink: 0 !important;
+}
+
+body.peta-page .page-footer {
+    flex-shrink: 0 !important;
+}

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/static/css/style.css" />
 </head>
-<body>
+<body class="peta-page">
     <header class="top-navbar">
         <div class="brand">
             <div class="brand-logo">G</div>
@@ -38,13 +38,6 @@
                     </button>
                     <div id="filter-dropdown" class="filter-dropdown hidden" aria-expanded="false">
                         <div class="filter-group">
-                            <label for="brand-filter">Brand</label>
-                            <select id="brand-filter" title="Filter SPBU berdasarkan brand">
-                                <option value="Semua">Semua</option>
-                                <option value="Pertamina">Pertamina</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
                             <label for="kecamatan-filter">Kecamatan</label>
                             <select id="kecamatan-filter" title="Filter SPBU berdasarkan kecamatan">
                                 <option value="Semua">Semua</option>
@@ -66,14 +59,6 @@
             <div id="map"></div>
 
             <div class="action-buttons">
-                <button id="toggle-access" class="action-button" title="Tampilkan atau sembunyikan analisis aksesibilitas">
-                    <span class="button-icon button-icon-access">🧭</span>
-                    Analisis Aksesibilitas
-                </button>
-                <a href="/dashboard" class="action-button action-link" title="Buka dashboard statistik">
-                    <span class="button-icon button-icon-dashboard">📊</span>
-                    Dashboard Statistik
-                </a>
             </div>
         </section>
     </main>
