@@ -13,27 +13,13 @@
             <div class="brand-logo">G</div>
             <div class="brand-text">
                 <span class="brand-name">GeoSPBU Semarang</span>
-                <span class="brand-tag">Analisis SPBU dan Mobilitas</span>
+                <span class="brand-tag">Analisis SPBU</span>
             </div>
         </div>
         <div class="nav-center">
             <div class="nav-search">
                 <input id="search-input" type="search" placeholder="Cari SPBU..." />
                 <button id="search-button" class="nav-search-btn">Cari</button>
-            </div>
-            <div class="filter-panel">
-                <button id="toggle-filter-btn" class="filter-toggle-button" title="Filter SPBU">
-                    <span class="filter-icon">⚙</span>
-                </button>
-                <div id="filter-dropdown" class="filter-dropdown hidden" aria-expanded="false">
-                    <div class="filter-group">
-                        <label for="kecamatan-filter">Kecamatan</label>
-                        <select id="kecamatan-filter">
-                            <option value="Semua">Semua</option>
-                        </select>
-                    </div>
-                    <button id="reset-filters" class="filter-reset-button">Reset Filter</button>
-                </div>
             </div>
         </div>
         <nav class="nav-links">
@@ -54,6 +40,32 @@
                 <span>Memuat data...</span>
             </div>
             <div id="map"></div>
+
+            <div id="layer-control" class="layer-control">
+                <div class="layer-header">🗺️ Tampilan Peta</div>
+                <div class="layer-body">
+                    <label class="layer-item"><input type="checkbox" id="chk-spbu" checked> <span class="layer-icon spbu">📍</span> <span class="layer-label">SPBU Eksisting</span></label>
+                    <label class="layer-item"><input type="checkbox" id="chk-zona"> <span class="layer-icon zona">🚦</span> <span class="layer-label">Kepadatan Lalu Lintas</span></label>
+                    <label class="layer-item"><input type="checkbox" id="chk-access"> <span class="layer-icon access">🔍</span> <span class="layer-label">Analisis Aksesibilitas</span></label>
+                    <label class="layer-item"><input type="checkbox" id="chk-rekom"> <span class="layer-icon rekom">⭐</span> <span class="layer-label">Rekomendasi Lokasi <span class="badge">UTAMA</span></span></label>
+                    <div class="layer-filter-panel layer-panel">
+                        <div class="filter-group">
+                            <label for="kecamatan-dropdown-toggle">Kecamatan</label>
+                            <div class="kecamatan-dropdown-wrapper">
+                                <button id="kecamatan-dropdown-toggle" class="kecamatan-toggle" type="button" aria-expanded="false">
+                                    <span id="kecamatan-selected">Semua</span>
+                                    <span class="dropdown-arrow">▾</span>
+                                </button>
+                                <div id="kecamatan-dropdown" class="kecamatan-dropdown hidden" role="listbox" aria-labelledby="kecamatan-dropdown-toggle">
+                                    <button type="button" class="kecamatan-option active" data-value="Semua">Semua</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="kecamatan-filter" value="Semua" />
+                        </div>
+                        <button id="reset-filters" class="filter-reset-button">Reset Filter</button>
+                    </div>
+                </div>
+            </div>
             <div class="action-buttons"></div>
         </section>
         <div id="panel-rekomendasi" class="panel-rekomendasi hidden">

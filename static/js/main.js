@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const map = L.map('map').setView([-6.9932, 110.4203], 13);
+    const map = L.map('map', { zoomControl: false }).setView([-6.9932, 110.4203], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors'
@@ -19,9 +19,32 @@ document.addEventListener('DOMContentLoaded', function () {
     const searchButton = document.getElementById('search-button');
     const brandFilter = document.getElementById('brand-filter');
     const kecamatanFilter = document.getElementById('kecamatan-filter');
+    const kecamatanDropdownToggle = document.getElementById('kecamatan-dropdown-toggle');
+    const kecamatanDropdown = document.getElementById('kecamatan-dropdown');
+    const kecamatanSelected = document.getElementById('kecamatan-selected');
     const resetFilters = document.getElementById('reset-filters');
-    const filterToggleButton = document.getElementById('toggle-filter-btn');
-    const filterDropdown = document.getElementById('filter-dropdown');
+
+    const closeKecamatanDropdown = () => {
+        if (kecamatanDropdown) kecamatanDropdown.classList.add('hidden');
+        if (kecamatanDropdownToggle) kecamatanDropdownToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const openKecamatanDropdown = () => {
+        if (kecamatanDropdown) kecamatanDropdown.classList.remove('hidden');
+        if (kecamatanDropdownToggle) kecamatanDropdownToggle.setAttribute('aria-expanded', 'true');
+    };
+
+    // Ensure recommendation panel has no inline left positioning and enforce right/top
+    const panelRekom = document.getElementById('panel-rekomendasi');
+    if (panelRekom) {
+        try {
+            panelRekom.style.left = '';
+            panelRekom.style.right = '8px';
+            panelRekom.style.top = '10px';
+            panelRekom.style.bottom = 'auto';
+            panelRekom.style.maxHeight = 'calc(100vh - 220px)';
+        } catch (e) { /* ignore */ }
+    }
 
     let accessVisible = false;
     let spbuData = [];
@@ -109,7 +132,7 @@ const createRecommendationPopup = (item) => {
     };
 
     const setKecamatanOptions = () => {
-        if (!kecamatanFilter) return;
+        if (!kecamatanFilter || !kecamatanDropdown || !kecamatanSelected) return;
         const uniqueKecamatans = new Set(
             spbuData
                 .map(function(item) { return item.kecamatan; })
@@ -119,9 +142,11 @@ const createRecommendationPopup = (item) => {
             return a.localeCompare(b, 'id');
         });
         const options = ['Semua'].concat(sorted);
-        kecamatanFilter.innerHTML = options.map(function(kec) {
-            return '<option value="' + kec + '">' + kec + '</option>';
+        kecamatanDropdown.innerHTML = options.map(function(kec) {
+            return '<button type="button" class="kecamatan-option' + (kec === 'Semua' ? ' active' : '') + '" data-value="' + kec + '">' + kec + '</button>';
         }).join('');
+        kecamatanFilter.value = 'Semua';
+        kecamatanSelected.textContent = 'Semua';
     };
 
     const matchesFilters = (item) => {
@@ -334,28 +359,44 @@ icon: createRecommendationIcon(item.rank)
     }
 
     if (brandFilter) brandFilter.addEventListener('change', refreshSPBU);
-    if (kecamatanFilter) kecamatanFilter.addEventListener('change', refreshSPBU);
-    if (resetFilters) resetFilters.addEventListener('click', resetSearchAndFilters);
+    if (resetFilters) resetFilters.addEventListener('click', function() {
+        resetSearchAndFilters();
+        closeKecamatanDropdown();
+    });
 
-    if (filterToggleButton) {
-        filterToggleButton.addEventListener('click', function(event) {
+    if (kecamatanDropdownToggle) {
+        kecamatanDropdownToggle.addEventListener('click', function(event) {
             event.stopPropagation();
-            if (!filterDropdown) return;
-            const isOpen = !filterDropdown.classList.contains('hidden');
-            filterDropdown.classList.toggle('hidden', isOpen);
-            filterDropdown.classList.toggle('active', !isOpen);
-            filterDropdown.setAttribute('aria-expanded', String(!isOpen));
+            if (!kecamatanDropdown) return;
+            if (kecamatanDropdown.classList.contains('hidden')) {
+                openKecamatanDropdown();
+            } else {
+                closeKecamatanDropdown();
+            }
+        });
+    }
+
+    if (kecamatanDropdown) {
+        kecamatanDropdown.addEventListener('click', function(event) {
+            const target = event.target;
+            if (!target.classList.contains('kecamatan-option')) return;
+            const value = target.dataset.value;
+            if (!value) return;
+            if (kecamatanFilter) kecamatanFilter.value = value;
+            if (kecamatanSelected) kecamatanSelected.textContent = value;
+            Array.from(kecamatanDropdown.querySelectorAll('.kecamatan-option')).forEach(function(item) {
+                item.classList.toggle('active', item.dataset.value === value);
+            });
+            refreshSPBU();
+            closeKecamatanDropdown();
         });
     }
 
     document.addEventListener('click', function(event) {
-        if (!filterDropdown || !filterToggleButton) return;
-        if (filterDropdown.classList.contains('hidden')) return;
+        if (!kecamatanDropdown || !kecamatanDropdownToggle) return;
         const target = event.target;
-        if (!filterDropdown.contains(target) && !filterToggleButton.contains(target)) {
-            filterDropdown.classList.add('hidden');
-            filterDropdown.classList.remove('active');
-            filterDropdown.setAttribute('aria-expanded', 'false');
+        if (!kecamatanDropdown.contains(target) && !kecamatanDropdownToggle.contains(target)) {
+            closeKecamatanDropdown();
         }
     });
 
@@ -365,7 +406,52 @@ icon: createRecommendationIcon(item.rank)
         'Analisis Aksesibilitas': accessLayer,
         'Rekomendasi Lokasi': rekomLayer
     };
-    L.control.layers(null, overlays, { collapsed: false }).addTo(map);
+
+    // Setup custom layer control bindings to the checkboxes in DOM
+    const setupLayerControl = () => {
+        const chkSpbu = document.getElementById('chk-spbu');
+        const chkZona = document.getElementById('chk-zona');
+        const chkAccess = document.getElementById('chk-access');
+        const chkRekom = document.getElementById('chk-rekom');
+
+        if (chkSpbu) {
+            chkSpbu.checked = true;
+            chkSpbu.addEventListener('change', function(e) {
+                if (e.target.checked) map.addLayer(spbuLayer);
+                else map.removeLayer(spbuLayer);
+            });
+        }
+        if (chkZona) {
+            chkZona.addEventListener('change', function(e) {
+                if (e.target.checked) map.addLayer(zonaLayer);
+                else map.removeLayer(zonaLayer);
+            });
+        }
+        if (chkAccess) {
+            chkAccess.addEventListener('change', function(e) {
+                accessVisible = !!e.target.checked;
+                if (accessVisible) map.addLayer(accessLayer);
+                else map.removeLayer(accessLayer);
+                setAccessButtonState();
+            });
+        }
+        if (chkRekom) {
+            chkRekom.addEventListener('change', function(e) {
+                if (e.target.checked) map.addLayer(rekomLayer);
+                else map.removeLayer(rekomLayer);
+            });
+        }
+        // apply initial checkbox states to map
+        try {
+            if (chkSpbu && chkSpbu.checked) map.addLayer(spbuLayer);
+            if (chkZona && chkZona.checked) map.addLayer(zonaLayer);
+            if (chkAccess && chkAccess.checked) { accessVisible = true; map.addLayer(accessLayer); }
+            if (chkRekom && chkRekom.checked) map.addLayer(rekomLayer);
+        } catch (e) { /* ignore */ }
+    };
+
+    // Add zoom control at bottom-left explicitly
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
     const applyUrlParams = () => {
         const urlParams = new URLSearchParams(window.location.search);
@@ -404,6 +490,8 @@ if (closePanel) {
             return Promise.all([loadRecommendations(), loadAccessAnalysis()]);
         })
         .then(function() {
+            // initialize custom layer control after layers and markers loaded
+            try { setupLayerControl(); } catch (e) { console.warn('Layer control init failed', e); }
             applyUrlParams();
             hideLoading();
         })
