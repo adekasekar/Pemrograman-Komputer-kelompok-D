@@ -1,22 +1,30 @@
 document.addEventListener('DOMContentLoaded', function () {
     const totalSpbuEl = document.getElementById('total-spbu');
     const countPertaminaEl = document.getElementById('count-pertamina');
+    const totalRekomendasiEl = document.getElementById('total-rekomendasi');
     const topKecamatanEl = document.getElementById('top-kecamatan');
     const blindspotAreaEl = document.getElementById('blindspot-area');
     const kecamatanTableBody = document.getElementById('kecamatan-table-body');
 
-    fetch('/api/statistik')
-        .then((response) => response.json())
-        .then((data) => {
-            totalSpbuEl.textContent = data.total_spbu || 0;
-            countPertaminaEl.textContent = data.brand_counts.Pertamina || 0;
-            topKecamatanEl.textContent = data.kecamatan_with_most_spbu || '-';
-            blindspotAreaEl.textContent = `${data.blind_spot_area.toFixed(1)} km²`;
+    Promise.all([
+        fetch('/api/statistik').then((response) => response.json()),
+        fetch('/api/rekomendasi').then((response) => response.json())
+    ])
+        .then(([statistikData, rekomendasiData]) => {
+            // Tampilkan statistik SPBU
+            totalSpbuEl.textContent = statistikData.total_spbu || 0;
+            countPertaminaEl.textContent = statistikData.brand_counts.Pertamina || 0;
+            topKecamatanEl.textContent = statistikData.kecamatan_with_most_spbu || '-';
+            blindspotAreaEl.textContent = `${statistikData.blind_spot_area.toFixed(1)} km²`;
 
-            const kecamatanLabels = data.kecamatan_counts.map((item) => item.kecamatan);
-            const kecamatanValues = data.kecamatan_counts.map((item) => item.count);
-            const zoneLabels = data.zone_density.map((item) => item.zone_name);
-            const zoneValues = data.zone_density.map((item) => item.density);
+            // Tampilkan total rekomendasi
+            const recommendations = rekomendasiData.recommendations || [];
+            totalRekomendasiEl.textContent = recommendations.length;
+
+            const kecamatanLabels = statistikData.kecamatan_counts.map((item) => item.kecamatan);
+            const kecamatanValues = statistikData.kecamatan_counts.map((item) => item.count);
+            const zoneLabels = statistikData.zone_density.map((item) => item.zone_name);
+            const zoneValues = statistikData.zone_density.map((item) => item.density);
 
             new Chart(document.getElementById('spbuKecamatanChart'), {
                 type: 'bar',
@@ -71,7 +79,32 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            data.kecamatan_table.forEach((item) => {
+            // Chart untuk Top 10 Rekomendasi
+            const topRekomendasi = recommendations.slice(0, 10);
+            const rekomendasiLabels = topRekomendasi.map((item, idx) => `#${item.rank} ${item.location_name}`);
+            const rekomendasiScores = topRekomendasi.map((item) => item.total_score);
+            
+            new Chart(document.getElementById('rekomendasiChart'), {
+                type: 'bar',
+                data: {
+                    labels: rekomendasiLabels,
+                    datasets: [{
+                        label: 'Skor Total',
+                        data: rekomendasiScores,
+                        backgroundColor: '#C18DB4'
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, max: 100 }
+                    }
+                }
+            });
+
+            statistikData.kecamatan_table.forEach((item) => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${item.kecamatan}</td>
